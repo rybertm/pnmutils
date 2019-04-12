@@ -18,10 +18,37 @@
     <ClCompile Include="src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\pnm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\main.h">
+    <ClInclude Include="include\pnm.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="samples\baboon.pgm" />
+    <None Include="samples\blackbuck.ascii.ppm" />
+    <None Include="samples\body2.ascii.pgm" />
+    <None Include="samples\circle.ascii.pbm" />
+    <None Include="samples\feep.pbm" />
+    <None Include="samples\feep.pgm" />
+    <None Include="samples\fool.ascii.pbm" />
+    <None Include="samples\lena.ascii.pgm" />
+    <None Include="samples\lena.ppm" />
+    <None Include="samples\pbmlib.ascii.ppm" />
+    <None Include="samples\pepper.ascii.pgm" />
+    <None Include="samples\sierpinski.ascii.pbm" />
+    <None Include="samples\sines.ascii.ppm" />
+    <None Include="samples\snail.ascii.ppm" />
+    <None Include="samples\snap.ascii.pgm" />
+    <None Include="samples\star_field.ascii.ppm" />
+    <None Include="samples\surf.ascii.pgm" />
+    <None Include="samples\totem.ascii.pgm" />
+    <None Include="samples\washington.ascii.pbm" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="samples\t.txt" />
   </ItemGroup>
 </Project>
