@@ -16,7 +16,7 @@ PNM::~PNM()
 	reset();
 }
 
-int PNM::readFile(const char * file_path)
+int PNM::loadFile(const char * file_path)
 {
 	// If there is a file already in memory then it resets everything and read the new file
 	if (!m_type)
@@ -56,7 +56,7 @@ int PNM::readFile(const char * file_path)
 	else
 	{
 		reset();
-		readFile(file_path);
+		loadFile(file_path);
 	}
 
 	return 0;

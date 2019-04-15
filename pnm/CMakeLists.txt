@@ -1,10 +1,21 @@
-cmake_minimum_required(VERSION 3.12.2)
-project(pnm)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.5)
+PROJECT(pnmloader)
 
-#Bring the headers, such as Student.h into the project
-include_directories(include)
+SET(CMAKE_BUILD_TYPE Debug)
+SET(CMAKE_DEBUG_POSTFIX "d")
+
+OPTION(SHARED_LIB "Build pnm shared library." OFF)
+OPTION(STATIC_LIB "Build pnm static library." ON)
+
+#Bring the headers into the project
+INCLUDE_DIRECTORIES(include)
 
 #add source files to project
-file(GLOB SOURCES src/*.cpp)
+FILE(GLOB SOURCES src/*.cpp)
 
-add_executable(pnm ${SOURCES})
+IF(SHARED_LIB)
+	ADD_LIBRARY(${PROJECT_NAME} SHARED ${SOURCES})
+ENDIF()
+IF(STATIC_LIB)
+	ADD_LIBRARY(${PROJECT_NAME}_static STATIC ${SOURCES})
+ENDIF()

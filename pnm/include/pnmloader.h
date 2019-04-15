@@ -9,7 +9,7 @@ public:
 	 PNM();
 	~PNM();
 
-	int		readFile(const char* file_path);
+	int		loadFile(const char* file_path);
 	int		getWidth();
 	int		getHeight();
 	int		getGrad();
