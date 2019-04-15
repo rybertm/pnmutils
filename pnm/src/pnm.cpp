@@ -1,8 +1,8 @@
 ﻿#include "pnm.h"
 
 #include <iostream>
-#include <fstream>	//	filestream - input/output operations on files
-#include <sstream>	//	stringstream - in
+#include <fstream>	//	filestream - input/output operations on files streams
+#include <sstream>	//	stringstream - input/output operations on string streams
 #include <string>
 
 PNM::PNM()
@@ -13,47 +13,109 @@ PNM::PNM()
 
 PNM::~PNM()
 {
-	if(m_matrixR)
+	reset();
+}
+
+int PNM::readFile(const char * file_path)
+{
+	// If there is a file already in memory then it resets everything and read the new file
+	if (!m_type)
+	{
+		std::ifstream image_file;
+		std::string image_content;
+		std::string buff;
+		unsigned int index = 0;
+
+		image_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+
+		std::cerr << "\nLoading image [" << file_path << "]: ";
+
+		try
+		{
+			std::ostringstream image_stream;
+
+			image_file.open(file_path, std::ios_base::in);
+
+			image_stream << image_file.rdbuf();
+
+			image_file.close();
+
+			image_content = image_stream.str();
+		}
+		catch (const std::ifstream::failure& e)
+		{
+			std::cerr << "ERROR::FILE_NOT_SUCCESFULLY_READ" << "\n";
+			return -1;
+		}
+
+		readHeader(image_content, buff, index);
+		readContent(image_content, buff, index);
+
+		std::cerr << "Loaded\n";
+	}
+	else
+	{
+		reset();
+		readFile(file_path);
+	}
+
+	return 0;
+}
+
+int PNM::getWidth()
+{
+	return m_width;
+}
+
+int PNM::getHeight()
+{
+	return m_height;
+}
+
+int PNM::getGrad()
+{
+	return m_max_grad;
+}
+
+void PNM::getRGB(int ** matrixR, int ** matrixG, int ** matrixB)
+{
+	if (!m_matrixR)
+		return;
+	else
+	{
+		(*matrixR) = new int[m_width * m_height * sizeof(int)];
+		(*matrixG) = new int[m_width * m_height * sizeof(int)];
+		(*matrixB) = new int[m_width * m_height * sizeof(int)];
+
+		for (int i = 0; i < m_height; i++)
+		{
+			for (int j = 0; j < m_width; j++)
+			{
+				(*matrixR)[i*m_height + j] = m_matrixR[i*m_height + j];
+				(*matrixG)[i*m_height + j] = m_matrixG[i*m_height + j];
+				(*matrixB)[i*m_height + j] = m_matrixB[i*m_height + j];
+			}
+		}
+	}
+}
+
+void PNM::reset()
+{
+	if (m_matrixR)
 		delete[] m_matrixR;
 	if (m_matrixG)
 		delete[] m_matrixG;
 	if (m_matrixB)
 		delete[] m_matrixB;
-}
 
-int PNM::readFile(const char * file_path)
-{
-	std::ifstream image_file;
-	std::string image_content;
-	std::string buff;
-	unsigned int index = 0;
+	m_matrixR = nullptr;
+	m_matrixG = nullptr;
+	m_matrixB = nullptr;
 
-	image_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-
-	std::cerr << "\nLoading image [" << file_path << "]: \n";
-
-	try
-	{
-		std::ostringstream image_stream;
-
-		image_file.open(file_path, std::ios_base::in);
-
-		image_stream << image_file.rdbuf();
-
-		image_file.close();		
-
-		image_content = image_stream.str();
-	}
-	catch (const std::ifstream::failure& e)
-	{
-		std::cerr << "ERROR::FILE_NOT_SUCCESFULLY_READ" << "\n";
-		return -1;
-	}
-
-	readHeader(image_content, buff, index);
-	readContent(image_content, buff, index);
-	
-	return 0;
+	m_type		=	0;
+	m_width		=	0;
+	m_height	=	0;
+	m_max_grad	=	0;
 }
 
 void PNM::readHeader(const std::string& image_content, std::string& buff, unsigned int& index)
@@ -74,7 +136,7 @@ void PNM::readHeader(const std::string& image_content, std::string& buff, unsign
 
 			index += pos - index + 1;
 		}
-		else if (image_content[index] == ' ')
+		else if (image_content[index] == ' ' || image_content[index] == '\n')
 		{
 			index++;
 			continue;
@@ -129,7 +191,8 @@ void PNM::readHeader(const std::string& image_content, std::string& buff, unsign
 
 void PNM::readContent(const std::string& image_content, std::string& buff, unsigned int& index)
 {
-	int row, col, tmp, count = 1;
+	int row, col, tmp[3] = { -1, -1, -1 };
+
 	m_matrixR = new int[m_width * m_height * sizeof(int)];
 	m_matrixG = new int[m_width * m_height * sizeof(int)];
 	m_matrixB = new int[m_width * m_height * sizeof(int)];
@@ -138,51 +201,72 @@ void PNM::readContent(const std::string& image_content, std::string& buff, unsig
 	{
 		for (col = 0; col < m_width; col++)
 		{
-			buff.clear();
-
-			// ignore whitespaces or new line before a number, if any
-			while (image_content[index] == ' ' || image_content[index] == '\n')
-				index++;
-
-			while (image_content[index] != ' ' && image_content[index] != '\n' &&
-				index != image_content.length())
+			// if the pnm file is type 1 or 2 it uses the same number for every matrix
+			if (m_type != 3)
 			{
-				buff.push_back(image_content[index++]);
+				buff.clear();
+
+				// ignore whitespaces or new line before a number, if any
+				while (image_content[index] == ' ' || image_content[index] == '\n')
+					index++;
+
+				while (image_content[index] != ' ' && image_content[index] != '\n' &&
+					index != image_content.length())
+				{
+					buff.push_back(image_content[index++]);
+				}
+
+				tmp[0] = std::stoi(buff);
+
+				index++;
+			}
+			// if the pnm file is type 3 it uses a different number for each matrix
+			else
+			{
+				for (int i = 0; i < m_type; i++)
+				{
+					buff.clear();
+
+					// ignore whitespaces or new line before a number, if any
+					while (image_content[index] == ' ' || image_content[index] == '\n')
+						index++;
+
+					while (image_content[index] != ' ' && image_content[index] != '\n' &&
+						index != image_content.length())
+					{
+						buff.push_back(image_content[index++]);
+					}
+
+					tmp[i] = std::stoi(buff);
+
+					index++;
+				}
 			}
 
-			tmp = std::stoi(buff);
-
-			index++;
 			switch (m_type)
 			{
 			case 1:
-				if (tmp == 0)
-					tmp = 255;
+				if (tmp[0] == 0)
+					tmp[0] = 255;
 				else
-					tmp = 0;
+					tmp[0] = 0;
 
-				m_matrixR[row*m_height + col] = tmp;
-				m_matrixG[row*m_height + col] = tmp;
-				m_matrixB[row*m_height + col] = tmp;
+				m_matrixR[row*m_height + col] = tmp[0];
+				m_matrixG[row*m_height + col] = tmp[0];
+				m_matrixB[row*m_height + col] = tmp[0];
 				break;
 			case 2:
-				m_matrixR[row*m_height + col] = tmp;
-				m_matrixG[row*m_height + col] = tmp;
-				m_matrixB[row*m_height + col] = tmp;
+				m_matrixR[row*m_height + col] = tmp[0];
+				m_matrixG[row*m_height + col] = tmp[0];
+				m_matrixB[row*m_height + col] = tmp[0];
 				break;
 			case 3:
-				if (count % 3 == 0)
-					m_matrixB[row*m_height + col] = tmp;
-				if (count % 3 == 1)
-					m_matrixR[row*m_height + col] = tmp;
-				if (count % 3 == 2)
-					m_matrixG[row*m_height + col] = tmp;
-
-				count++;
+				m_matrixR[row*m_height + col] = tmp[0];
+				m_matrixG[row*m_height + col] = tmp[1];
+				m_matrixB[row*m_height + col] = tmp[2];
 				break;
 			}
 			
 		}
-		count = 1;
 	}	
 }

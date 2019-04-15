@@ -1,11 +1,32 @@
 ﻿#include "pnm.h"
+#include "visualizer.h"
+
+#include <GL/freeglut.h>
 
 #include <iostream>
 
-int main()
+int main(int argc, char** argv)
 {
-	PNM parser;
+	if (argv[1])
+	{
+		PNM parser;
 
-	parser.readFile("samples/lena.ppm");
-	std::cout << "Hello World!\n";
+		parser.readFile(argv[1]);
+		parser.readFile(argv[1]);
+
+		parser.getRGB(&visu::matrixR, &visu::matrixG, &visu::matrixB);
+
+		visu::init(argc, argv);
+		visu::createWindow(parser.getWidth(), parser.getHeight(), parser.getGrad(), argv[1]);
+
+		glutMainLoop();
+		visu::reset();
+	}
+	else
+	{
+		std::cerr << "No PNM file provided. Aborting\n";
+		std::cin.get();
+		return -1;
+	}
+	return 0;
 }

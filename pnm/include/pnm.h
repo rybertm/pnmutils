@@ -1,7 +1,7 @@
 ﻿#ifndef	PNM_H_INCLUDED
 #define	PNM_H_INCLUDED
 
-#include <fstream>	//	filestream - input/output operations on files
+#include <string>
 
 class PNM
 {
@@ -10,6 +10,11 @@ public:
 	~PNM();
 
 	int		readFile(const char* file_path);
+	int		getWidth();
+	int		getHeight();
+	int		getGrad();
+	void	getRGB(int** matrixR, int** matrixG, int** matrixB);
+	void	reset();
 
 private:
 	int		m_type;
