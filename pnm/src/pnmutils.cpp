@@ -1,13 +1,16 @@
-﻿#include "pnm.h"
+﻿#include "pnmutils.h"
+
+#include <GL/freeglut.h>
 
 #include <iostream>
 #include <fstream>	//	filestream - input/output operations on files streams
 #include <sstream>	//	stringstream - input/output operations on string streams
 #include <string>
+#include <functional>
 
 PNM::PNM()
 	: m_matrixR(nullptr), m_matrixG(nullptr), m_matrixB(nullptr),
-	m_width(0), m_height(0), m_type(0), m_max_grad(0)
+	m_width(0), m_height(0), m_type(0), m_max_grad(0), initialized(false)
 {
 }
 
@@ -21,6 +24,8 @@ int PNM::loadFile(const char * file_path)
 	// If there is a file already in memory then it resets everything and read the new file
 	if (!m_type)
 	{
+		m_title = file_path;
+
 		std::ifstream image_file;
 		std::string image_content;
 		std::string buff;
@@ -77,25 +82,50 @@ int PNM::getGrad()
 	return m_max_grad;
 }
 
-void PNM::getRGB(int ** matrixR, int ** matrixG, int ** matrixB)
+int PNM::at(char mat, int index)
 {
-	if (!m_matrixR)
-		return;
+	if (m_matrixR)
+	{
+		if (mat == 'R' || mat == 'r')
+			return m_matrixR[index];
+		else if (mat == 'G' || mat == 'g')
+			return m_matrixG[index];
+		else if (mat == 'B' || mat == 'b')
+			return m_matrixB[index];
+		else
+			return -1;
+	}
+	else
+		return -1;
+}
+
+void PNM::init(int argc, char** argv)
+{
+	glutInit(&argc, argv);
+	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+
+	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
+
+	initialized = true;
+}
+
+void PNM::drawImage(void(*processFunc)())
+{
+	if (initialized)
+	{
+		glutInitWindowPosition((glutGet(GLUT_SCREEN_WIDTH) - 640) / 2, (glutGet(GLUT_SCREEN_HEIGHT) - 480) / 2);
+
+		glutInitWindowSize(m_width, m_height);
+		glutCreateWindow(m_title.data());
+
+		glutDisplayFunc(processFunc);
+
+		gluOrtho2D(0, m_width, 0, m_height);
+	}
 	else
 	{
-		(*matrixR) = new int[m_width * m_height * sizeof(int)];
-		(*matrixG) = new int[m_width * m_height * sizeof(int)];
-		(*matrixB) = new int[m_width * m_height * sizeof(int)];
-
-		for (int i = 0; i < m_height; i++)
-		{
-			for (int j = 0; j < m_width; j++)
-			{
-				(*matrixR)[i*m_height + j] = m_matrixR[i*m_height + j];
-				(*matrixG)[i*m_height + j] = m_matrixG[i*m_height + j];
-				(*matrixB)[i*m_height + j] = m_matrixB[i*m_height + j];
-			}
-		}
+		std::cout << "\nMust run init() before drawing.\nAborting...\n";
+		return;
 	}
 }
 
@@ -116,6 +146,7 @@ void PNM::reset()
 	m_width		=	0;
 	m_height	=	0;
 	m_max_grad	=	0;
+	m_title.clear();
 }
 
 void PNM::readHeader(const std::string& image_content, std::string& buff, unsigned int& index)
@@ -270,3 +301,33 @@ void PNM::readContent(const std::string& image_content, std::string& buff, unsig
 		}
 	}	
 }
+
+//void PNM::originalImage()
+//{
+//	int col, row, r, c;
+//	int R, G, B;
+//	glClearColor(1.0, 1.0, 1.0, 0); //Especifica um cor para o fundo
+//	glClear(GL_COLOR_BUFFER_BIT);
+//	glBegin(GL_POINTS);
+//	for (row = m_height - 1, r = 0; row >= 0; row--, r++)
+//	{
+//		for (col = 0, c = 0; col < m_width; col++, c++)
+//		{
+//			R = m_matrixR[r * m_height + c];
+//			G = m_matrixG[r * m_height + c];
+//			B = m_matrixB[r * m_height + c];
+//
+//			if (m_max_grad != 255)
+//			{
+//				R = (double)R / m_max_grad * 255;
+//				G = (double)G / m_max_grad * 255;
+//				B = (double)B / m_max_grad * 255;
+//			}
+//
+//			glColor3ub(R, G, B);
+//			glVertex2i(col, row);
+//		}
+//	}
+//	glEnd();
+//	glFlush();
+//}

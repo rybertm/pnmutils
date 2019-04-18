@@ -40,12 +40,12 @@
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\pnmloader.cpp">
+    <ClCompile Include="src\pnmutils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\pnmloader.h">
+    <ClInclude Include="include\pnmutils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
