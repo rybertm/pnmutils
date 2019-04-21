@@ -36,7 +36,6 @@
     <None Include="samples\washington.ascii.pbm" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="samples\t.txt" />
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
