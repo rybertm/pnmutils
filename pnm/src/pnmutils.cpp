@@ -1,76 +1,63 @@
 ﻿#include "pnmutils.h"
 
-#include <GL/freeglut.h>
-
 #include <iostream>
 #include <fstream>	//	filestream - input/output operations on files streams
 #include <sstream>	//	stringstream - input/output operations on string streams
 #include <string>	//	stoi - string to integer
-#include <functional>
 
 PNM::PNM()
-	: m_matrixR(nullptr), m_matrixG(nullptr), m_matrixB(nullptr),
-	m_width(0), m_height(0), m_type(0), m_max_val(255), initialized(false),
-	m_xPos(15), m_yPos(100)
+	: m_width(0), m_height(0), m_type(0), m_max_val(255)
 {
 }
 
 PNM::~PNM()
 {
-	reset();
 }
 
-int PNM::loadFile(const char * file_path)
+unsigned char* PNM::loadFile(const char* file_path)
 {
-	// If there is a file already in memory then it resets everything and read the new file
-	if (!m_type)
+	unsigned char* data = nullptr;
+
+	free(data);
+
+	std::ifstream image_file;
+	std::string image_content;
+	std::string buff;
+	unsigned int index = 0;
+
+	image_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+
+	std::cerr << "\nLoading image [" << file_path << "]: ";
+
+	try
 	{
-		m_file_name = file_path;
+		std::ostringstream image_stream;
 
-		std::ifstream image_file;
-		std::string image_content;
-		std::string buff;
-		unsigned int index = 0;
+		image_file.open(file_path, std::ios_base::in);
 
-		image_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+		image_stream << image_file.rdbuf();
 
-		std::cerr << "\nLoading image [" << file_path << "]: ";
+		image_file.close();
 
-		try
-		{
-			std::ostringstream image_stream;
+		image_content = image_stream.str();
 
-			image_file.open(file_path, std::ios_base::in);
-
-			image_stream << image_file.rdbuf();
-
-			image_file.close();
-
-			image_content = image_stream.str();
-
-			readHeader(image_content, buff, index);
-			readContent(image_content, buff, index);
-		}
-		catch (const std::ifstream::failure& e)
-		{
-			std::cerr << "ERROR::FILE_NOT_SUCCESFULLY_READ(" << e.what() << ")\n" << e.code();
-			return -1;
-		}
-		catch (const std::invalid_argument & e)
-		{
-			std::cerr << "ERROR::INVALID_ARGUMENT(" << e.what() << ")\n";
-			return -1;
-		}
-
-		std::cerr << "Loaded\n";
+		readHeader(image_content, buff, index);
+		data = readContent(image_content, buff, index);
 	}
-	else
+	catch (const std::ifstream::failure & e)
 	{
-		reset();
-		loadFile(file_path);
+		std::cerr << "ERROR::FILE_NOT_SUCCESFULLY_READ(" << e.what() << ")\n" << e.code();
+		return nullptr;
+	}
+	catch (const std::invalid_argument & e)
+	{
+		std::cerr << "ERROR::INVALID_ARGUMENT(" << e.what() << ")\n";
+		return nullptr;
 	}
 
-	return 0;
+	std::cerr << "Loaded\n";
+
+	return data;
 }
 
 int PNM::getWidth()
@@ -88,83 +75,15 @@ int PNM::getMaxVal()
 	return m_max_val;
 }
 
-int PNM::at(char mat, int index)
+void PNM::free(unsigned char* data)
 {
-	if (m_matrixR)
-	{
-		if (mat == 'R' || mat == 'r')
-			return m_matrixR[index];
-		else if (mat == 'G' || mat == 'g')
-			return m_matrixG[index];
-		else if (mat == 'B' || mat == 'b')
-			return m_matrixB[index];
-		else
-			return -1;
-	}
-	else
-		return -1;
-}
+	if (data)
+		delete[] data;
 
-void PNM::init(int argc, char** argv)
-{
-	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
-
-	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
-
-	initialized = true;
-}
-
-void PNM::drawImage(void(*processFunc)(), std::string windowTitle)
-{
-	if (initialized)
-	{
-		std::string title;
-		if (windowTitle.find("\\0") == std::string::npos)
-			title = m_file_name + " (" + windowTitle + ')';
-		else
-			title = m_file_name;
-
-		glutInitWindowPosition(m_xPos, m_yPos);
-
-		glutInitWindowSize(m_width, m_height);
-		glutCreateWindow(title.data());
-
-		glutDisplayFunc(processFunc);
-
-		gluOrtho2D(0, m_width, 0, m_height);
-	}
-	else
-	{
-		std::cout << "\nMust run init() before drawing.\nAborting...\n";
-		return;
-	}
-}
-
-void PNM::reset()
-{
-	if (m_matrixR)
-		delete[] m_matrixR;
-	if (m_matrixG)
-		delete[] m_matrixG;
-	if (m_matrixB)
-		delete[] m_matrixB;
-
-	m_matrixR = nullptr;
-	m_matrixG = nullptr;
-	m_matrixB = nullptr;
-
-	m_type		=	0;
-	m_width		=	0;
-	m_height	=	0;
-	m_max_val	=	0;
-	m_file_name.clear();
-}
-
-void PNM::setWindowPos(const int xPos, const int yPos)
-{
-	m_xPos = xPos;
-	m_yPos = yPos;
+	m_type = 0;
+	m_width = 0;
+	m_height = 0;
+	m_max_val = 255;
 }
 
 void PNM::readHeader(const std::string& image_content, std::string& buff, unsigned int& index)
@@ -245,16 +164,16 @@ void PNM::readHeader(const std::string& image_content, std::string& buff, unsign
 	}
 }
 
-void PNM::readContent(const std::string& image_content, std::string& buff, unsigned int& index)
+unsigned char* PNM::readContent(const std::string& image_content, std::string& buff, unsigned int& index)
 {
 	try
 	{
-		//	row - row, col - col
-		int row, col, tmp[3] = { -1, -1, -1 };
+		int row, col;
+		unsigned char tmp[3] = { 0, 0, 0 };
 
-		m_matrixR = new int[m_width * m_height * sizeof(int)];
-		m_matrixG = new int[m_width * m_height * sizeof(int)];
-		m_matrixB = new int[m_width * m_height * sizeof(int)];
+		unsigned char* data = new unsigned char[m_width * m_height * 3];
+
+		int offset = m_width * m_height;
 
 		for (row = 0; row < m_height; row++)
 		{
@@ -271,7 +190,7 @@ void PNM::readContent(const std::string& image_content, std::string& buff, unsig
 						index++;
 
 					buff.push_back(image_content[index]);
-					
+
 					tmp[0] = std::stoi(buff);	//	convert string to integer
 
 					index++;
@@ -306,9 +225,9 @@ void PNM::readContent(const std::string& image_content, std::string& buff, unsig
 						.
 						row = r, col = c; --- index = N --- (N+1)th element, matrix[r][c] = matrix[N]
 					*/
-					m_matrixR[row * m_width + col] = tmp[0];
-					m_matrixG[row * m_width + col] = tmp[0];
-					m_matrixB[row * m_width + col] = tmp[0];
+					data[row * m_width + col] = tmp[0];
+					data[row * m_width + col + offset] = tmp[0];
+					data[row * m_width + col + (2 * offset)] = tmp[0];
 					break;
 				case 2:
 					// ---START: READ NUMBER---
@@ -334,9 +253,9 @@ void PNM::readContent(const std::string& image_content, std::string& buff, unsig
 					index++;
 					// ---END: READ NUMBER---
 
-					m_matrixR[row * m_width + col] = tmp[0];
-					m_matrixG[row * m_width + col] = tmp[0];
-					m_matrixB[row * m_width + col] = tmp[0];
+					data[row * m_width + col] = tmp[0];
+					data[row * m_width + col + offset] = tmp[0];
+					data[row * m_width + col + (2 * offset)] = tmp[0];
 					break;
 				case 3:
 					// ---START: READ NUMBER---
@@ -365,16 +284,18 @@ void PNM::readContent(const std::string& image_content, std::string& buff, unsig
 					}
 					// ---END: READ NUMBER---
 
-					m_matrixR[row * m_width + col] = tmp[0];
-					m_matrixG[row * m_width + col] = tmp[1];
-					m_matrixB[row * m_width + col] = tmp[2];
+					data[row * m_width + col] = tmp[0];
+					data[row * m_width + col + offset] = tmp[1];
+					data[row * m_width + col + (2 * offset)] = tmp[2];
 					break;
 				}
 
 			}
 		}
+
+		return data;
 	}
-	catch (const std::invalid_argument& e)
+	catch (const std::invalid_argument & e)
 	{
 		throw;
 	}
